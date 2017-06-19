@@ -6,8 +6,6 @@ use Closure;
 
 use Illuminate\Http\Request;
 
-use App\User;
-
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
@@ -26,8 +24,8 @@ class Azure
      */
     public function handle($request, Closure $next)
     {
-        $access_token = $request->session()->get('access_token');
-        $refresh_token = $request->session()->get('refresh_token');
+        $access_token = $request->session()->get('_rootinc_azure_access_token');
+        $refresh_token = $request->session()->get('_rootinc_azure_refresh_token');
 
         if (!$access_token || !$refresh_token)
         {
@@ -48,11 +46,11 @@ class Azure
 
             $contents = json_decode($response->getBody()->getContents());
         } catch(RequestException $e) {
-            return implode("", explode(PHP_EOL,$e->getMessage()));
+            $this->fail($request, $e);
         }
 
-        $request->session()->put('access_token', $contents->access_token);
-        $request->session()->put('refresh_token', $contents->refresh_token);
+        $request->session()->put('_rootinc_azure_access_token', $contents->access_token);
+        $request->session()->put('_rootinc_azure_refresh_token', $contents->refresh_token);
 
         return $next($request);
     }
@@ -80,30 +78,21 @@ class Azure
 
             $contents = json_decode($response->getBody()->getContents());
         } catch(RequestException $e) {
-            return $this->fail($e);
+            return $this->fail($request, $e);
         }
 
         $access_token = $contents->access_token;
         $refresh_token = $contents->refresh_token;
         $profile = json_decode( base64_decode( explode(".", $contents->id_token)[1]) );
 
-        $request->session()->put('access_token', $access_token);
-        $request->session()->put('refresh_token', $refresh_token);
+        $request->session()->put('_rootinc_azure_access_token', $access_token);
+        $request->session()->put('_rootinc_azure_refresh_token', $refresh_token);
 
         return $this->success($request, $access_token, $refresh_token, $profile);
     }
 
     protected function success($request, $access_token, $refresh_token, $profile)
     {
-        $email = strtolower($profile->unique_name);
-
-        $user = User::updateOrCreate(['email' => $email], [
-            'firstName' => $profile->given_name,
-            'lastName' => $profile->family_name
-        ]);
-
-        $request->session()->put('user_id', $user->id);
-
         return redirect("/");
     }
 
