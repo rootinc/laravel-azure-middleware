@@ -1,0 +1,23 @@
+{
+    "name": "rootinc/laravel-azure-middleware",
+    "description": "Azure Middleware Auth",
+    "type": "library",
+    "require": {
+        "guzzlehttp/guzzle": "^6.2"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Root Inc",
+            "email": "djewett@rootinc.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [
+        ],
+        "psr-4": {
+            "App\\": "app/",
+            "RootInc\\Laravel-Azure-Middleware\\": "src/"
+        }
+    }
+}
