@@ -1,6 +1,6 @@
 <?php
 
-namespace \RootInc\LaravelAzureMiddleware;
+namespace RootInc\LaravelAzureMiddleware;
 
 use Closure;
 
