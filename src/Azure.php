@@ -1,5 +1,7 @@
 <?php
 
+namespace \RootInc\LaravelAzureMiddleware;
+
 use Closure;
 
 use Illuminate\Http\Request;
