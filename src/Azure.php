@@ -11,6 +11,8 @@ use GuzzleHttp\Exception\RequestException;
 
 class Azure
 {
+    protected $login_route = "/login";
+
     protected $baseUrl = "https://login.microsoftonline.com/";
     protected $route = "/oauth2/";
 
@@ -27,9 +29,14 @@ class Azure
         $access_token = $request->session()->get('_rootinc_azure_access_token');
         $refresh_token = $request->session()->get('_rootinc_azure_refresh_token');
 
+        if (env("APP_ENV") === "testing")
+        {
+            return $this->handlecallback($request, $next, $access_token, $refresh_token);
+        }
+
         if (!$access_token || !$refresh_token)
         {
-            return redirect("/login");
+            return redirect($this->$login_route);
         }
 
         $client = new Client();
@@ -52,7 +59,7 @@ class Azure
         $request->session()->put('_rootinc_azure_access_token', $contents->access_token);
         $request->session()->put('_rootinc_azure_refresh_token', $contents->refresh_token);
 
-        return $next($request);
+        return $this->handlecallback($request, $next, $access_token, $refresh_token);
     }
 
     public function azure(Request $request)
@@ -99,5 +106,10 @@ class Azure
     protected function fail(Request $request, RequestExcpetion $e)
     {
         return implode("", explode(PHP_EOL,$e->getMessage()));
+    }
+
+    protected function handlecallback($request, Closure $next, $access_token, $refresh_token)
+    {
+        return $next($request);
     }
 }
