@@ -28,7 +28,7 @@ It's best to have an Office 365 button on our login webpage that routes to `/log
 
 ## Extended Installation
 
-The out-of-the-box implementation let's you login users.  However, let's say we would like to store this user into a database  There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`. The following provides information on how to extend the Root Laravel Azure Middleware Library:
+The out-of-the-box implementation let's you login users.  However, let's say we would like to store this user into a database.  There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`. The following provides information on how to extend the Root Laravel Azure Middleware Library:
 
 1. To get started (assuming we've followed the [Normal Installation](#normal-installation) directions), create a file called `AppAzure.php` in the `App\Http\Middleware` folder.  You can either do this through `artisan` or manually.
 2. Add this as a starting point in this file:
