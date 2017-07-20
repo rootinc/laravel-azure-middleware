@@ -36,7 +36,7 @@ class Azure
 
         if (!$access_token || !$refresh_token)
         {
-            return redirect($this->$login_route);
+            return redirect($this->login_route);
         }
 
         $client = new Client();
