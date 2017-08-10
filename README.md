@@ -13,8 +13,9 @@ Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurec
 
 3. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
 4. In our `.env` add `TENANT_ID, CLIENT_ID, CLIENT_SECRET and RESOURCE`.  We can get these values/read more here: https://portal.azure.com/
-5. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
-6. If you need custom callbacks, see [Extended Installation](#extended-installation).
+5. Within our app on https://portal.azure.com/ point `reply url` to the `/login/azurecallback` route with the full url (ex: http://thewebsite.com/login/azurecallback).
+6. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
+7. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
 ## Routing
 
