@@ -103,9 +103,9 @@ class Azure
         return redirect("/");
     }
 
-    protected function fail(Request $request, RequestExcpetion $e)
+    protected function fail(Request $request, RequestException $e)
     {
-        return implode("", explode(PHP_EOL,$e->getMessage()));
+        return implode("", explode(PHP_EOL, $e->getMessage()));
     }
 
     protected function handlecallback($request, Closure $next, $access_token, $refresh_token)
