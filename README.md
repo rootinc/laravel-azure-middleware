@@ -17,6 +17,8 @@ Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurec
 6. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
 7. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
+__NOTE: You may need to add premissions for (legacy) Azure Active Directory Graph__
+
 ## Routing
 
 `Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');` First parameter can be wherever you want to route the azure login.  Change as you would like.
