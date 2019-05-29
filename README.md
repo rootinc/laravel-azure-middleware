@@ -111,6 +111,33 @@ class AppAzure extends Azure
 
 Building off of our previous example from [Extended Installation](#extended-installation), we have a `user_id` set in the session.  We can use this id to query against the user model.  Once we have the user model, we can setup the singleton to return the user.  The callback should call the closure, `$next($request);` and return it.  In our case, the default implementation redirects to `/`, so we call the parent here.
 
+#### Custom Redirect
+
+As of v0.6.0, we added the ability to customize the redirect method.  For example, if the session token's expire, but the user is still authenticated, we can check for that with this example:
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use RootInc\LaravelAzureMiddleware\Azure as Azure;
+
+class AppAzure extends Azure
+{
+    protected function redirect($request)
+    {
+        if (Auth::user() !== null)
+        {
+            return $this->azure($request);
+        }
+        else
+        {
+            return redirect($this->login_route);
+        }
+    }
+}
+```
+
 #### Different Login Route
 
 As of v0.4.0, we added the ability to change the `$login_route` in the middelware.  Building off [Extended Installation](#extended-installation), in our `AppAzure` class, we can simply set `$login_route` to whatever.  For example:
