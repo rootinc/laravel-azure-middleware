@@ -122,6 +122,8 @@ namespace App\Http\Middleware;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
+use Auth;
+
 class AppAzure extends Azure
 {
     protected function redirect($request)
