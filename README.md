@@ -76,7 +76,7 @@ Route::get('/login/azurecallback', '\App\Http\Middleware\AppAzure@azurecallback'
 
 4. Finally, update `Kernel.php`'s `azure` key to be `'azure' => \App\Http\Middleware\AppAzure::class,`
 
-### Other Extended Options
+## Other Extending Options
 
 #### Callback on Every Handshake
 
