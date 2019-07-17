@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
+use Auth;
+
 class Azure
 {
     protected $login_route = "/login";
@@ -19,7 +21,7 @@ class Azure
     /**
      * Handle an incoming request
      *
-     * @param $request
+     * @param \Illuminate\Http\Request $request
      * @param Closure $next
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
      * @throws \Exception
@@ -31,12 +33,12 @@ class Azure
 
         if (env("APP_ENV") === "testing")
         {
-            return $this->handlecallback($request, $next, $access_token, $refresh_token);
+            return $this->handleTesting($request, $next, $access_token, $refresh_token);
         }
 
         if (!$access_token || !$refresh_token)
         {
-            return $this->redirect($request, $next);
+            return $this->redirect($request);
         }
 
         $client = new Client();
@@ -62,11 +64,65 @@ class Azure
         return $this->handlecallback($request, $next, $access_token, $refresh_token);
     }
 
-    public function azure(Request $request)
+    /**
+     * Handle an incoming request in a testing environment
+     * Assumes tester is calling actingAs or loginAs during testing to run this correctly
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param Closure $next
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     */
+    protected function handleTesting(Request $request, Closure $next)
     {
-        return redirect()->away( $this->baseUrl . env('AZURE_TENANT_ID') . $this->route . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&resource=" . urlencode(env('AZURE_RESOURCE')) );
+        $user = Auth::user();
+
+        if (!isset($user))
+        {
+            return $this->redirect($request, $next);
+        }
+
+        return $this->handlecallback($request, $next);
     }
 
+    /**
+     * Gets the azure url
+     *
+     * @return String
+     */
+    public function getAzureUrl()
+    {
+        return $this->baseUrl . env('AZURE_TENANT_ID') . $this->route . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&resource=" . urlencode(env('AZURE_RESOURCE'));
+    }
+
+    /**
+     * Redirects to the Azure route
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     */
+    public function azure(Request $request)
+    {
+        return redirect()->away( $this->getAzureUrl() );
+    }
+
+    /**
+     * Customized Redirect method
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     */
+    protected function redirect(Request $request)
+    {
+        return redirect($this->login_route);
+    }
+
+    /**
+     * Callback after login from Azure
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     * @throws \Exception
+     */
     public function azurecallback(Request $request)
     {
         $client = new Client();
@@ -98,22 +154,42 @@ class Azure
         return $this->success($request, $access_token, $refresh_token, $profile);
     }
 
-    protected function redirect($request, Closure $next)
+    /**
+     * Handler that is called when a successful login has taken place for the first time
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param String $access_token
+     * @param String $refresh_token
+     * @param mixed $profile
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     */
+    protected function success(Request $request, $access_token, $refresh_token, $profile)
     {
-        return redirect($this->login_route);
+        return redirect()->intended("/");
     }
 
-    protected function success($request, $access_token, $refresh_token, $profile)
-    {
-        return redirect("/");
-    }
-
+    /**
+     * Handler that is called when a failed handshake has taken place
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \GuzzleHttp\Exception\RequestException $e
+     * @return string
+     */
     protected function fail(Request $request, RequestException $e)
     {
         return implode("", explode(PHP_EOL, $e->getMessage()));
     }
 
-    protected function handlecallback($request, Closure $next, $access_token, $refresh_token)
+    /**
+     * Handler that is called every request when a user is logged in
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param Closure $next
+     * @param String $access_token
+     * @param String $refresh_token
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     */
+    protected function handlecallback(Request $request, Closure $next, $access_token, $refresh_token)
     {
         return $next($request);
     }
