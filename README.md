@@ -27,7 +27,7 @@ __NOTE: You may need to add premissions for (legacy) Azure Active Directory Grap
 
 ### Front End
 
-It's best to have an Office 365 button on our login webpage that routes to `/login/azure` (or whatever you renamed it to).  This can be as simple as an anchor tag like this `<a href="/login/azure" class="officeButton"></a>` 
+It's best to have an Office 365 button on your login webpage that routes to `/login/azure` (or whatever you renamed it to).  This can be as simple as an anchor tag like this `<a href="/login/azure" class="officeButton"></a>` 
 
 ## Extended Installation
 
