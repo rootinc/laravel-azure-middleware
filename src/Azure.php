@@ -81,7 +81,7 @@ class Azure
             return $this->redirect($request, $next);
         }
 
-        return $this->handlecallback($request, $next);
+        return $this->handlecallback($request, $next, null, null);
     }
 
     /**
