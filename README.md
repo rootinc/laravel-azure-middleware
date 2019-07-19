@@ -31,7 +31,7 @@ It's best to have an Office 365 button on our login webpage that routes to `/log
 
 ## Extended Installation
 
-The out-of-the-box implementation let's you login users.  However, let's say we would like to store this user into a database.  There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`. The following provides information on how to extend the Root Laravel Azure Middleware Library:
+The out-of-the-box implementation let's you login users.  However, let's say we would like to store this user into a database, as well as login the user in with Laravel Auth.  There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`. The following provides information on how to extend the Root Laravel Azure Middleware Library:
 
 1. To get started (assuming we've followed the [Normal Installation](#normal-installation) directions), create a file called `AppAzure.php` in the `App\Http\Middleware` folder.  You can either do this through `artisan` or manually.
 2. Add this as a starting point in this file:
@@ -43,6 +43,8 @@ namespace App\Http\Middleware;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
+use Auth;
+
 use App\User;
 
 class AppAzure extends Azure
@@ -53,17 +55,17 @@ class AppAzure extends Azure
 
         $user = User::updateOrCreate(['email' => $email], [
             'firstName' => $profile->given_name,
-            'lastName' => $profile->family_name
+            'lastName' => $profile->family_name,
         ]);
 
-        $request->session()->put('user_id', $user->id);
+        Auth::login($user, true);
 
         return parent::success($request, $access_token, $refresh_token, $profile);
     }
 }
 ```
 
-The above gives us a way to add/update users after a successful handshake.  `$profile` contains all sorts of metadata that we use to create or update our user.  More information here: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code#jwt-token-claims . The default implementation redirects to `/`, so we call the parent here.  Feel free to not extend the default and to redirect elsewhere.
+The above gives us a way to add/update users after a successful handshake.  `$profile` contains all sorts of metadata that we use to create or update our user.  More information here: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code#jwt-token-claims . The default implementation redirects to the intended url, or `/`, so we call the parent here.  Feel free to not extend the default and to redirect elsewhere.
 
 3. Our routes need to be updated to the following:
 
@@ -74,9 +76,11 @@ Route::get('/login/azurecallback', '\App\Http\Middleware\AppAzure@azurecallback'
 
 4. Finally, update `Kernel.php`'s `azure` key to be `'azure' => \App\Http\Middleware\AppAzure::class,`
 
-### Callback on Every Handshake
+## Other Extending Options
 
-As of v0.4.0, we added a callback after every successful handle (handshake).  The default is to simply call the `$next` closure.  However, let's say we want to store a Singleton of a user.  Here's an example of how to go about that:
+#### Callback on Every Handshake
+
+As of v0.4.0, we added a callback after every successful request (handshake) from Azure.  The default is to simply call the `$next` closure.  However, let's say we want to update the user.  Here's an example of how to go about that:
 
 ```php
 <?php
@@ -87,33 +91,31 @@ use Closure;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
+use Auth;
+use Carbon\Carbon;
+
 use App\User;
 
 class AppAzure extends Azure
 {
     protected function handlecallback($request, Closure $next, $access_token, $refresh_token)
     {
-        $user_id = $request->session()->get('user_id');
+        $user = Auth::user();
 
-        if ($user_id)
-        {
-            $user = User::find($user_id);
+        $user->updated_at = Carbon::now();
 
-            \App::singleton('user', function() use($user){
-                return $user;
-            });
-        }
+        $user->save();
 
         return parent::handlecallback($request, $next, $access_token, $refresh_token);
     }
 }
 ```
 
-Building off of our previous example from [Extended Installation](#extended-installation), we have a `user_id` set in the session.  We can use this id to query against the user model.  Once we have the user model, we can setup the singleton to return the user.  The callback should call the closure, `$next($request);` and return it.  In our case, the default implementation redirects to `/`, so we call the parent here.
+Building off of our previous example from [Extended Installation](#extended-installation), we have a user in the Auth now (since we did `Auth::login` in the success callback).  With the user model, we can update the user's `updated_at` field.  The callback should call the closure, `$next($request);` and return it.  In our case, the default implementation does this, so we call the parent here.
 
 #### Custom Redirect
 
-As of v0.6.0, we added the ability to customize the redirect method.  For example, if the session token's expire, but the user is still authenticated, we can check for that with this example:
+As of v0.6.0, we added the ability to customize the redirect method.  For example, if the session token's expire, but the user is still authenticated with Laravel, we can check for that with this example:
 
 ```php
 <?php
@@ -134,7 +136,7 @@ class AppAzure extends Azure
         }
         else
         {
-            return redirect($this->login_route);
+            return parent::redirect($request);
         }
     }
 }
@@ -142,7 +144,7 @@ class AppAzure extends Azure
 
 #### Different Login Route
 
-As of v0.4.0, we added the ability to change the `$login_route` in the middelware.  Building off [Extended Installation](#extended-installation), in our `AppAzure` class, we can simply set `$login_route` to whatever.  For example:
+As of v0.4.0, we added the ability to change the `$login_route` in the middleware.  Building off [Extended Installation](#extended-installation), in our `AppAzure` class, we can simply set `$login_route` to whatever.  For example:
 
 ```php
 <?php
@@ -158,6 +160,76 @@ class AppAzure extends Azure
 ```
 
 The above would now set `$login_route` to `/` or root.
+
+#### Getting / Overriding the Azure Route
+
+As of v0.7.0, we added the ability to get the Azure URL.  For example, let's say we wanted to modify the Azure URL so that it also passed the user's email to Azure as a parmater.  Building off [Extended Installation](#extended-installation), in our `AppAzure` class, we could do something like this:
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use RootInc\LaravelAzureMiddleware\Azure as Azure;
+
+use Auth;
+
+class AppAzure extends Azure
+{
+    //we could overload this if we wanted too.
+    public function getAzureUrl()
+    {
+        return $this->baseUrl . env('AZURE_TENANT_ID') . $this->route . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&resource=" . urlencode(env('AZURE_RESOURCE'));
+    }
+
+    public function azure(Request $request)
+    {
+        $user = Auth::user();
+
+        $away = $this->getAzureUrl();
+
+        if ($user)
+        {
+            $away .= "&login_hint=" . $user->email;
+        }
+
+        return redirect()->away($away);
+    }
+}
+```
+
+## Testing with Laravel Azure Middleware
+
+As of v0.7.0, we added integration with Laravel's tests by calling `actingAs` for HTTP tests or `loginAs` with Dusk.  This assumes that we are using the `Auth::login` method in the success callback, shown at [Extended Installation](#extended-installation).  There is no need to do anything in our `AppAzure` class, unless we needed to overwrite the default behavior, which is shown below:
+
+```php
+<?php
+
+namespace App\Http\Middleware;
+
+use RootInc\LaravelAzureMiddleware\Azure as Azure;
+
+use Auth;
+
+class AppAzure extends Azure
+{
+    //this is the default behavior
+    //overwrite to meet your needs
+    protected function handleTesting(Request $request, Closure $next)
+    {
+        $user = Auth::user();
+
+        if (!isset($user))
+        {
+            return $this->redirect($request, $next);
+        }
+
+        return $this->handlecallback($request, $next, null, null);
+    }
+}
+```
+
+The above will call the class's redirect method, if it can't find a user in Laravel's auth.  Otherwise, the above will call the class's handlecallback method.  Therefore, tests can check if the correct redirection is happening, or that handlecallback is working correctly (which by default calls `$next($request);`).
 
 ## Contributing
 
