@@ -31,7 +31,7 @@ class Azure
         $access_token = $request->session()->get('_rootinc_azure_access_token');
         $refresh_token = $request->session()->get('_rootinc_azure_refresh_token');
 
-        if (env("APP_ENV") === "testing")
+        if (config('app.env') === "testing")
         {
             return $this->handleTesting($request, $next, $access_token, $refresh_token);
         }
@@ -95,7 +95,8 @@ class Azure
     }
 
     /**
-     * Redirects to the Azure route
+     * Redirects to the Azure route.  Typically used to point a web route to this method.
+     * Ffor example: Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed

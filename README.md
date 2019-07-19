@@ -213,7 +213,7 @@ use Auth;
 
 class AppAzure extends Azure
 {
-    //this is overwriting the default behavior with the default behavior.
+    //this is the default behavior
     //overwrite to meet your needs
     protected function handleTesting(Request $request, Closure $next)
     {
