@@ -16,6 +16,8 @@ class Azure
     protected $login_route = "/login";
 
     protected $baseUrl = "https://login.microsoftonline.com/";
+
+    protected $route2 = "/oauth2/v2.0/";
     protected $route = "/oauth2/";
 
     /**
@@ -49,7 +51,8 @@ class Azure
                     'grant_type' => 'refresh_token',
                     'client_id' => env('AZURE_CLIENT_ID'),
                     'client_secret' => env('AZURE_CLIENT_SECRET'),
-                    'refresh_token' => $refresh_token
+                    'refresh_token' => $refresh_token,
+                    'resource' => env('AZURE_RESOURCE'),
                 ]
             ]);
 
@@ -91,12 +94,12 @@ class Azure
      */
     public function getAzureUrl()
     {
-        return $this->baseUrl . env('AZURE_TENANT_ID') . $this->route . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&resource=" . urlencode(env('AZURE_RESOURCE'));
+        return $this->baseUrl . env('AZURE_TENANT_ID') . $this->route2 . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&domain_hint=" . urlencode(env('AZURE_DOMAIN_HINT')) . "&scope=" . urldecode(env('AZURE_SCOPE'));
     }
 
     /**
      * Redirects to the Azure route.  Typically used to point a web route to this method.
-     * Ffor example: Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
+     * For example: Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
      *
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
@@ -136,7 +139,8 @@ class Azure
                     'grant_type' => 'authorization_code',
                     'client_id' => env('AZURE_CLIENT_ID'),
                     'client_secret' => env('AZURE_CLIENT_SECRET'),
-                    'code' => $code
+                    'code' => $code,
+                    'resource' => env('AZURE_RESOURCE'),
                 ]
             ]);
 
@@ -193,5 +197,30 @@ class Azure
     protected function handlecallback(Request $request, Closure $next, $access_token, $refresh_token)
     {
         return $next($request);
+    }
+
+    /**
+     * Gets the logout url
+     *
+     * @return String
+     */
+    public function getLogoutUrl()
+    {
+        return $this->baseUrl . "common" . $this->route . "logout";
+    }
+
+    /**
+     * Redirects to the Azure logout route.  Typically used to point a web route to this method.
+     * For example: Route::get('/logout/azure', '\RootInc\LaravelAzureMiddleware\Azure@azurelogout');
+     *
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Routing\Redirector|mixed
+     */
+    public function azurelogout(Request $request)
+    {
+        $request->session()->pull('_rootinc_azure_access_token');
+        $request->session()->pull('_rootinc_azure_refresh_token');
+
+        return redirect()->away($this->getLogoutUrl());
     }
 }
