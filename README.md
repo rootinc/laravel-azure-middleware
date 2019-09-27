@@ -46,6 +46,8 @@ The out-of-the-box implementation let's you login users.  However, let's say we 
 namespace App\Http\Middleware;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
+use Microsoft\Graph\Graph;
+use Microsoft\Graph\Model;
 
 use Auth;
 
@@ -55,11 +57,18 @@ class AppAzure extends Azure
 {
     protected function success($request, $access_token, $refresh_token, $profile)
     {
-        $email = strtolower($profile->unique_name);
+        $graph = new Graph();
+        $graph->setAccessToken($access_token);
+        
+        $graph_user = $graph->createRequest("GET", "/me")
+                      ->setReturnType(Model\User::class)
+                      execute();
+        
+        $email = strtolower($graph_user->getUserPrincipalName());
 
         $user = User::updateOrCreate(['email' => $email], [
-            'firstName' => $profile->given_name,
-            'lastName' => $profile->family_name,
+            'firstName' => $graph_user->getGivenName(),
+            'lastName' => $graph_user->getSurname(),
         ]);
 
         Auth::login($user, true);
