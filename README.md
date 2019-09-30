@@ -5,19 +5,20 @@ Provides Azure Authentication Middleware for a Laravel App.
 ## Normal Installation
 
 1. `composer require rootinc/laravel-azure-middleware`
-2. In our routes folder (most likely `web.php`), add
+2. Copy the file `/vendor/rootinc/laravel-azure-middleware/config/azure.php` to your application's `/config` directory
+3. In our routes folder (most likely `web.php`), add
 ```php
 Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
 Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback');
 ```
 
-3. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
-4. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/
-5. As of 0.8.0, we added `AZURE_SCOPE`, which are permissions to be used for the request.  We can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
-6. We also added an optional `AZURE_DOMAIN_HINT` that can be used to help users know which email address they should login with.  More info here: https://azure.microsoft.com/en-us/updates/app-service-auth-and-azure-ad-domain-hints/
-7. Within our app on https://portal.azure.com/ point `reply url` to the `/login/azurecallback` route with the full url (ex: http://thewebsite.com/login/azurecallback).
-8. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
-9. If you need custom callbacks, see [Extended Installation](#extended-installation).
+4. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
+5. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/
+6. As of 0.8.0, we added `AZURE_SCOPE`, which are permissions to be used for the request.  We can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
+7. We also added an optional `AZURE_DOMAIN_HINT` that can be used to help users know which email address they should login with.  More info here: https://azure.microsoft.com/en-us/updates/app-service-auth-and-azure-ad-domain-hints/
+8. Within our app on https://portal.azure.com/ point `reply url` to the `/login/azurecallback` route with the full url (ex: http://thewebsite.com/login/azurecallback).
+9. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
+10. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
 __NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Graph~~ As of 0.8.0, we are using v2 of Azure's login API, which allows us to pass scopes, or permissions we'd like to use.__
 
@@ -184,7 +185,7 @@ class AppAzure extends Azure
     //we could overload this if we wanted too.
     public function getAzureUrl()
     {
-        return $this->baseUrl . env('AZURE_TENANT_ID') . $this->route2 . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&domain_hint=" . urlencode(env('AZURE_DOMAIN_HINT')) . "&scope=" . urldecode(env('AZURE_SCOPE'));
+        return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
     }
 
     public function azure(Request $request)
