@@ -19,5 +19,12 @@
         "psr-4": {
             "RootInc\\LaravelAzureMiddleware\\": "src/"
         }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "rootinc\\LaravelAzureMiddleware\\AzureServiceProvider"
+            ]
+        }
     }
 }

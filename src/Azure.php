@@ -46,13 +46,13 @@ class Azure
         $client = new Client();
 
         try {
-            $response = $client->request('POST', $this->baseUrl . env('AZURE_TENANT_ID') . $this->route . "token", [
+            $response = $client->request('POST', $this->baseUrl . config('azure.tenant_id') . $this->route . "token", [
                 'form_params' => [
                     'grant_type' => 'refresh_token',
-                    'client_id' => env('AZURE_CLIENT_ID'),
-                    'client_secret' => env('AZURE_CLIENT_SECRET'),
+                    'client_id' => config('azure.client.id'),
+                    'client_secret' => config('azure.client.secret'),
                     'refresh_token' => $refresh_token,
-                    'resource' => env('AZURE_RESOURCE'),
+                    'resource' => config('azure.resource'),
                 ]
             ]);
 
@@ -94,7 +94,7 @@ class Azure
      */
     public function getAzureUrl()
     {
-        return $this->baseUrl . env('AZURE_TENANT_ID') . $this->route2 . "authorize?response_type=code&client_id=" . env('AZURE_CLIENT_ID') . "&domain_hint=" . urlencode(env('AZURE_DOMAIN_HINT')) . "&scope=" . urldecode(env('AZURE_SCOPE'));
+        return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
     }
 
     /**
@@ -134,13 +134,13 @@ class Azure
         $code = $request->input('code');
 
         try {
-            $response = $client->request('POST', $this->baseUrl . env('AZURE_TENANT_ID') . $this->route . "token", [
+            $response = $client->request('POST', $this->baseUrl . config('azure.tenant_id') . $this->route . "token", [
                 'form_params' => [
                     'grant_type' => 'authorization_code',
-                    'client_id' => env('AZURE_CLIENT_ID'),
-                    'client_secret' => env('AZURE_CLIENT_SECRET'),
+                    'client_id' => config('azure.client.id'),
+                    'client_secret' => config('azure.client.secret'),
                     'code' => $code,
-                    'resource' => env('AZURE_RESOURCE'),
+                    'resource' => config('azure.resource'),
                 ]
             ]);
 
