@@ -23,7 +23,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "rootinc\\LaravelAzureMiddleware\\AzureServiceProvider"
+                "RootInc\\LaravelAzureMiddleware\\AzureServiceProvider"
             ]
         }
     }
