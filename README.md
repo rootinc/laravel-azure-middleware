@@ -213,6 +213,16 @@ class AppAzure extends Azure
 }
 ```
 
+#### Using in a Multi-Tenanted Application
+
+If the desired use case requires a multi-tenanted application you can simply provide `common` in the .env file instead of a Tenant ID. eg. `AZURE_TENANT_ID=common`.
+
+This works by sending your end users to the generic login routes provided by Microsoft and for all intents and purposes shouldn't appear any different for development either. It should be known that there some inherent drawbacks to this approach as mentioned by in the MS Dev docs here:
+> When a single tenant application validates a token, it checks the signature of the token against the signing keys from the metadata document. This test allows it to make sure the issuer value in the token matches the one that was found in the metadata document.
+>Because the /common endpoint doesn’t correspond to a tenant and isn’t an issuer, when you examine the issuer value in the metadata for /common it has a templated URL instead of an actual value...
+
+Additional information regarding this can be found [here](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-convert-app-to-be-multi-tenant#update-your-code-to-handle-multiple-issuer-values).
+
 ## Testing with Laravel Azure Middleware
 
 As of v0.7.0, we added integration with Laravel's tests by calling `actingAs` for HTTP tests or `loginAs` with Dusk.  This assumes that we are using the `Auth::login` method in the success callback, shown at [Extended Installation](#extended-installation).  There is no need to do anything in our `AppAzure` class, unless we needed to overwrite the default behavior, which is shown below:
