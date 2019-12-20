@@ -182,6 +182,14 @@ class Azure
      */
     protected function fail(Request $request, RequestException $e)
     {
+        // Added by smitthhyy 18Dec2019 - Return 403 if user authenticates in AD but is not assigned to this application
+        if ($request->isMethod('get')) {
+            $errorDescription = trim(substr($request->query('error_description', 'SOMETHING_ELSE'), 0, 11));
+            if($errorDescription == "AADSTS50105") {
+                abort(403, "User is not authorisied within Azure AD to access this application.");
+            }
+        }
+        
         return implode("", explode(PHP_EOL, $e->getMessage()));
     }
 
