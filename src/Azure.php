@@ -188,6 +188,9 @@ class Azure
             if($errorDescription == "AADSTS50105") {
                 abort(403, "User is not authorisied within Azure AD to access this application.");
             }
+            if($errorDescription == "AADSTS90072"){
+                return abort(403,'The logged on user is not in the allowed tenant. Log in with a user in the allowed tenant.');
+            }
         }
         
         return implode("", explode(PHP_EOL, $e->getMessage()));
