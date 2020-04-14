@@ -62,7 +62,7 @@ class Azure
         }
 
         if (empty($contents->access_token) || empty($contents->refresh_token)) {
-            $this->fail($request, \Exception('Missing tokens in response contents'));
+            $this->fail($request, new \Exception('Missing tokens in response contents'));
         }
         
         $request->session()->put('_rootinc_azure_access_token', $contents->access_token);
