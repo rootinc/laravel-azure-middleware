@@ -121,7 +121,7 @@ class Azure
      */
     protected function redirect(Request $request)
     {
-        return redirect($this->login_route);
+        return redirect()->guest($this->login_route);
     }
 
     /**
