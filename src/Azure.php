@@ -190,7 +190,7 @@ class Azure
         if ($request->isMethod('get')) {
             $errorDescription = trim(substr($request->query('error_description', 'SOMETHING_ELSE'), 0, 11));
             if($errorDescription == "AADSTS50105") {
-                abort(403, "User is not authorisied within Azure AD to access this application.");
+                abort(403, "User is not authorized within Azure AD to access this application.");
             }
         }
         
