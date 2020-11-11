@@ -61,6 +61,10 @@ class Azure
             $this->fail($request, $e);
         }
 
+        if (empty($contents->access_token) || empty($contents->refresh_token)) {
+            $this->fail($request, new \Exception('Missing tokens in response contents'));
+        }
+        
         $request->session()->put('_rootinc_azure_access_token', $contents->access_token);
         $request->session()->put('_rootinc_azure_refresh_token', $contents->refresh_token);
 
@@ -117,7 +121,7 @@ class Azure
      */
     protected function redirect(Request $request)
     {
-        return redirect($this->login_route);
+        return redirect()->guest($this->login_route);
     }
 
     /**
@@ -177,11 +181,19 @@ class Azure
      * Handler that is called when a failed handshake has taken place
      *
      * @param \Illuminate\Http\Request $request
-     * @param \GuzzleHttp\Exception\RequestException $e
+     * @param \Exception $e
      * @return string
      */
-    protected function fail(Request $request, RequestException $e)
+    protected function fail(Request $request, \Exception $e)
     {
+        // Added by smitthhyy 18Dec2019 - Return 403 if user authenticates in AD but is not assigned to this application
+        if ($request->isMethod('get')) {
+            $errorDescription = trim(substr($request->query('error_description', 'SOMETHING_ELSE'), 0, 11));
+            if($errorDescription == "AADSTS50105") {
+                abort(403, "User is not authorisied within Azure AD to access this application.");
+            }
+        }
+        
         return implode("", explode(PHP_EOL, $e->getMessage()));
     }
 

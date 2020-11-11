@@ -1,6 +1,6 @@
 <?php
 
-namespace rootinc\LaravelAzureMiddleware;
+namespace RootInc\LaravelAzureMiddleware;
 
 use Illuminate\Support\ServiceProvider;
 
@@ -13,11 +13,17 @@ class AzureServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        if ($this->app->runningInConsole()) {
-
+        if ($this->app->runningInConsole())
+        {
             $this->publishes([
-                __DIR__.'/../config/azure.php' => config_path('azure.php'),
+                __DIR__ . '/../config/azure.php' => config_path('azure.php'),
             ], 'azure-config');
+        }
+        else
+        {
+            $this->mergeConfigFrom(
+                __DIR__ . '/../config/azure.php', 'azure'
+            );
         }
     }
 }

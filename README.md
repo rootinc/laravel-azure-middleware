@@ -1,11 +1,11 @@
 # Laravel Azure Middleware
 
-Provides Azure Authentication Middleware for a Laravel App.
+Provides Azure Authentication Middleware for a Laravel App.  If you like this, checkout <a href="https://github.com/rootinc/laravel-saml2-middleware">Laravel Saml Middleware</a>
 
 ## Normal Installation
 
 1. `composer require rootinc/laravel-azure-middleware`
-2. run `php artisan vendor:publish` to install config file to `config/azure.php`
+2. run `php artisan vendor:publish --provider="RootInc\LaravelAzureMiddleware\AzureServiceProvider"` to install config file to `config/azure.php`
 3. In our routes folder (most likely `web.php`), add
 ```php
 Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
@@ -13,7 +13,7 @@ Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurec
 ```
 
 4. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
-5. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/
+5. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/ (Hint: AZURE_RESOURCE should be https://graph.microsoft.com)
 6. As of 0.8.0, we added `AZURE_SCOPE`, which are permissions to be used for the request.  We can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
 7. We also added an optional `AZURE_DOMAIN_HINT` that can be used to help users know which email address they should login with.  More info here: https://azure.microsoft.com/en-us/updates/app-service-auth-and-azure-ad-domain-hints/
 8. Within our app on https://portal.azure.com/ point `reply url` to the `/login/azurecallback` route with the full url (ex: http://thewebsite.com/login/azurecallback).
@@ -212,6 +212,16 @@ class AppAzure extends Azure
     }
 }
 ```
+
+#### Using in a Multi-Tenanted Application
+
+If the desired use case requires a multi-tenanted application you can simply provide `common` in the .env file instead of a Tenant ID. eg. `AZURE_TENANT_ID=common`.
+
+This works by sending your end users to the generic login routes provided by Microsoft and for all intents and purposes shouldn't appear any different for development either. It should be known that there some inherent drawbacks to this approach as mentioned by in the MS Dev docs here:
+> When a single tenant application validates a token, it checks the signature of the token against the signing keys from the metadata document. This test allows it to make sure the issuer value in the token matches the one that was found in the metadata document.
+>Because the /common endpoint doesn’t correspond to a tenant and isn’t an issuer, when you examine the issuer value in the metadata for /common it has a templated URL instead of an actual value...
+
+Additional information regarding this can be found [here](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-convert-app-to-be-multi-tenant#update-your-code-to-handle-multiple-issuer-values).
 
 ## Testing with Laravel Azure Middleware
 
