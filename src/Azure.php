@@ -190,7 +190,7 @@ class Azure
         $azureErrors = [
             'AADSTS50105' => [
                 'HTTP_CODE' => '403',
-                'msg' => 'User is not authorised within Azure AD to access this application.',
+                'msg' => 'User is not authorized within Azure AD to access this application.',
             ],
             'AADSTS90072' => [
                 'HTTP_CODE' => '403',
