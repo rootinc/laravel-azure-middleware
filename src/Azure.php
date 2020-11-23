@@ -187,19 +187,23 @@ class Azure
     protected function fail(Request $request, \Exception $e)
     {
         // JustinByrne updated the original code from smitthhyy (18 Dec 2019) to change to an array to allow for multiple error codes.
-        $azureErrors = [
-            'AADSTS50105' => [
-                'HTTP_CODE' => '403',
-                'msg' => 'User is not authorized within Azure AD to access this application.',
-            ],
-            'AADSTS90072' => [
-                'HTTP_CODE' => '403',
-                'msg' => 'The logged on User is not in the allowed Tenant. Log in with a User in the allowed Tenant.',
-            ],
-        ];
+        if ($request->isMethod('get'))  {
+            $errorDescription = trim(substr($request->query('error_description', 'SOMETHING_ELSE'), 0, 11));
+            
+            $azureErrors = [
+                'AADSTS50105' => [
+                    'HTTP_CODE' => '403',
+                    'msg' => 'User is not authorized within Azure AD to access this application.',
+                ],
+                'AADSTS90072' => [
+                    'HTTP_CODE' => '403',
+                    'msg' => 'The logged on User is not in the allowed Tenant. Log in with a User in the allowed Tenant.',
+                ],
+            ];
 
-        if (array_key_exists($errorDescription, $azureErrors)) {
-            return abort($azureErrors[$errorDescription]['HTTP_CODE'], $azureErrors[$errorDescription]['msg']);
+            if (array_key_exists($errorDescription, $azureErrors)) {
+                return abort($azureErrors[$errorDescription]['HTTP_CODE'], $azureErrors[$errorDescription]['msg']);
+            }
         }
         
         return implode("", explode(PHP_EOL, $e->getMessage()));
