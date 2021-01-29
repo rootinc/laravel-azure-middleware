@@ -4,42 +4,59 @@ Provides Azure Authentication Middleware for a Laravel App.  If you like this, c
 
 ## Normal Installation
 
-1. `composer require rootinc/laravel-azure-middleware`
-2. run `php artisan vendor:publish --provider="RootInc\LaravelAzureMiddleware\AzureServiceProvider"` to install config file to `config/azure.php`
-3. In our routes folder (most likely `web.php`), add
+1. From the command line, run `composer require rootinc/laravel-azure-middleware`
+2. After Composer has installed the package, run `php artisan vendor:publish --provider="RootInc\LaravelAzureMiddleware\AzureServiceProvider"` to install the config file to `config/azure.php`
+3. Add the login and login callback routes to you router (by default `routes/web.php`) like shown below:
 ```php
-Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
-Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback');
+Route::get('/azure/login', [\RootInc\LaravelAzureMiddleware\Azure::class, 'azure'])->name('azure.login');
+Route::get('/azure/callback', [\RootInc\LaravelAzureMiddleware\Azure::class, 'azurecallback']);
 ```
 
-4. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
-5. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/ (Hint: AZURE_RESOURCE should be https://graph.microsoft.com)
-6. As of 0.8.0, we added `AZURE_SCOPE`, which are permissions to be used for the request.  We can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
-7. We also added an optional `AZURE_DOMAIN_HINT` that can be used to help users know which email address they should login with.  More info here: https://azure.microsoft.com/en-us/updates/app-service-auth-and-azure-ad-domain-hints/
-8. Within our app on https://portal.azure.com/ point `reply url` to the `/login/azurecallback` route with the full url (ex: http://thewebsite.com/login/azurecallback).
-9. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
+4. Open `App/Http/Kernel.php` and add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` to the `$routeMiddleware` array to register the middleware.
+5. Open `.env` and add the following variables (with your own values):
+```
+AZURE_TENANT_ID=your-azuread-tenant-id
+AZURE_CLIENT_ID=your-app-registration-application-id
+AZURE_CLIENT_SECRET=your-app-registration-client-secret
+AZURE_RESOURCE=https://graph.microsoft.com
+```
+All these values can be gotten from your tenant through https://portal.azure.com.
+6. As of version 0.8.0, the variable `AZURE_SCOPE` was added to the project, which are permissions to be used for the request.  You can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
+7. Additionally, an optional variable, `AZURE_DOMAIN_HINT` was added, so it can be used to help users know which email address they should login with.  More info here: https://azure.microsoft.com/en-us/updates/app-service-auth-and-azure-ad-domain-hints/
+8. In your App Registration on https://portal.azure.com/, set the `Redirect URIs` (often referred to as reply URLs) to the `/azure/callback` route with the full url (example: https://yourwebsite.com/azure/callback or http://localhost:8000 when running development locally).
+9. Add the `azure` middleware to your route groups on any routes that needs to be protected by authentication and enjoy :tada:
 10. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
-__NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Graph~~ As of 0.8.0, we are using v2 of Azure's login API, which allows us to pass scopes, or permissions we'd like to use.__
+__NOTE: As of 0.8.0, the project uses v2 of Azure's login API, which allows it to pass scopes, or permissions that can used.__
 
 ## Routing
 
-`Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');` First parameter can be wherever you want to route the azure login.  Change as you would like.
+As shown in [Normal Installation](#normal-installation), step 3.
+The route path and name can be whatever you need it to be.
 
-`Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback');` First parameter can be whatever you want to route after your callback.  Change as you would like.
+For example, instead of 
+```php
+Route::get('/azure/login', [\RootInc\LaravelAzureMiddleware\Azure::class,'azure'])->name('azure.login');
+```
+you could use
+```php
+Route::get('/login', [\RootInc\LaravelAzureMiddleware\Azure::class,'azure'])->name('login');
+```
 
-`Route::get('/logout/azure', '\RootInc\LaravelAzureMiddleware\Azure@azurelogout');` First parameter can be whatever you want to route after your callback.  Change as you would like.
+### Front End Login Button
 
-### Front End
-
-It's best to have an Office 365 button on your login webpage that routes to `/login/azure` (or whatever you renamed it to).  This can be as simple as an anchor tag like this `<a href="/login/azure" class="officeButton"></a>` 
+Please refer to [Microsoft's branding guidelines](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-add-branding-in-azure-ad-apps) for login buttons.
 
 ## Extended Installation
 
-The out-of-the-box implementation let's you login users.  However, let's say we would like to store this user into a database, as well as login the user in with Laravel Auth.  There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`. The following provides information on how to extend the Root Laravel Azure Middleware Library:
+The [Normal Installation](#normal-installation) implements the login process for users.
+However, if you need to store this user in a database, as well as login the user with Laravel auth, you need some extra configuration. There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`.
 
-1. To get started (assuming we've followed the [Normal Installation](#normal-installation) directions), create a file called `AppAzure.php` in the `App\Http\Middleware` folder.  You can either do this through `artisan` or manually.
-2. Add this as a starting point in this file:
+This guide will show you how to extent the Root Laravel Azure Middleware Library for you application:
+
+1. Follow the [Normal Installation](#normal-installation) guide
+2. Make a new middleware with Artisan command `php artisan make:middleware AzureAuthentication`. This creates the file `AzureAuthentication.php` in the `App\Http\Middleware` folder of your project.
+3. Open the newly created file (from step 2) and remove all text and paste in the following:
 
 ```php
 <?php
@@ -54,7 +71,7 @@ use Auth;
 
 use App\User;
 
-class AppAzure extends Azure
+class AzureAuthentication extends Azure
 {
     protected function success($request, $access_token, $refresh_token, $profile)
     {
@@ -65,11 +82,10 @@ class AppAzure extends Azure
                       ->setReturnType(Model\User::class)
                       ->execute();
         
-        $email = strtolower($graph_user->getUserPrincipalName());
+        $userPrincipalName = strtolower($graph_user->getUserPrincipalName());
 
-        $user = User::updateOrCreate(['email' => $email], [
-            'firstName' => $graph_user->getGivenName(),
-            'lastName' => $graph_user->getSurname(),
+        $user = User::updateOrCreate(['email' => $userPrincipalName], [
+            'name' => $graph_user->getDisplayName(),
         ]);
 
         Auth::login($user, true);
@@ -79,23 +95,23 @@ class AppAzure extends Azure
 }
 ```
 
-The above gives us a way to add/update users after a successful handshake.  `$profile` contains all sorts of metadata that we use to create or update our user.  More information here: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code#jwt-token-claims . The default implementation redirects to the intended url, or `/`, so we call the parent here.  Feel free to not extend the default and to redirect elsewhere.
+The above gives us a way to add/update users after a successful handshake. `$profile` contains all sorts of metadata that can be used to create or update our user.  More information here: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code#jwt-token-claims . The default implementation redirects to the intended url, or `/`; So in this example, the parent is called.
 
 3. Our routes need to be updated to the following:
 
 ```php
-Route::get('/login/azure', '\App\Http\Middleware\AppAzure@azure');
-Route::get('/login/azurecallback', '\App\Http\Middleware\AppAzure@azurecallback');
-Route::get('/logout/azure', '\App\Http\Middleware\AppAzure@azurelogout');
+Route::get('/azure/login', [\App\Http\Middleware\AzureAuthentication::class, 'azure'])->name('azure.login');
+Route::get('/azure/callback', [\App\Http\Middleware\AzureAuthentication::class, 'azurecallback']);
+Route::get('/azure/logout', [\App\Http\Middleware\AzureAuthentication::class, 'azurelogout'])->name('azure.logout');
 ```
 
-4. Finally, update `Kernel.php`'s `azure` key to be `'azure' => \App\Http\Middleware\AppAzure::class,`
+4. Finally, open `App/Http/Kernel.php` and change the middleware implementation of the `azure` key to be `'azure' => \App\Http\Middleware\AzureAuthentication::class,`
 
 ## Other Extending Options
 
 #### Callback on Every Handshake
 
-As of v0.4.0, we added a callback after every successful request (handshake) from Azure.  The default is to simply call the `$next` closure.  However, let's say we want to update the user.  Here's an example of how to go about that:
+As of version 0.4.0, there was added a callback after every successful request (handshake) from Azure. The default is to call the `$next` closure. However, if you want to update the user, you can use the following example:
 
 ```php
 <?php
@@ -111,11 +127,13 @@ use Carbon\Carbon;
 
 use App\User;
 
-class AppAzure extends Azure
+class AzureAuthentication extends Azure
 {
     protected function handlecallback($request, Closure $next, $access_token, $refresh_token)
     {
         $user = Auth::user();
+        if($user === null) // If the application looses user data while user is authenticated with Laravel "catch" (i.e: User is deleted)
+            return response()->redirectToRoute('azure.login'); // Make sure the route name is correct if you changed it
 
         $user->updated_at = Carbon::now();
 
@@ -126,11 +144,11 @@ class AppAzure extends Azure
 }
 ```
 
-Building off of our previous example from [Extended Installation](#extended-installation), we have a user in the Auth now (since we did `Auth::login` in the success callback).  With the user model, we can update the user's `updated_at` field.  The callback should call the closure, `$next($request);` and return it.  In our case, the default implementation does this, so we call the parent here.
+Building off of our previous example from [Extended Installation](#extended-installation), you now have a user in Laravel Auth (since `Auth::login` was called in the success callback).  With the user model, you can update the user's `updated_at` field.  The callback should call the closure, `$next($request);` and return it.  In this case, the default implementation does this, so in this example, the parent is called.
 
 #### Custom Redirect
 
-As of v0.6.0, we added the ability to customize the redirect method.  For example, if the session token's expire, but the user is still authenticated with Laravel, we can check for that with this example:
+As of version 0.6.0, there was added the possibility to customize the redirect method.  For example, if the session token has expired, but the user is still authenticated with Laravel, it can be handled with this example check:
 
 ```php
 <?php
@@ -141,7 +159,7 @@ use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
 use Auth;
 
-class AppAzure extends Azure
+class AzureAuthentication extends Azure
 {
     protected function redirect($request)
     {
@@ -159,7 +177,9 @@ class AppAzure extends Azure
 
 #### Different Login Route
 
-As of v0.4.0, we added the ability to change the `$login_route` in the middleware.  Building off [Extended Installation](#extended-installation), in our `AppAzure` class, we can simply set `$login_route` to whatever.  For example:
+As of version 0.4.0, there was added the possibility ability to change the `$login_route` in the middleware.
+
+Building off [Extended Installation](#extended-installation), in the `AzureAuthentication` class, you can set the `$login_route` to whatever you need.  For example:
 
 ```php
 <?php
@@ -168,17 +188,19 @@ namespace App\Http\Middleware;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
-class AppAzure extends Azure
+class AzureAuthentication extends Azure
 {
-    protected $login_route = "/";
+    protected $login_route = "/dashboard";
 }
 ```
 
-The above would now set `$login_route` to `/` or root.
+The above code would now set `$login_route` to `/dashboard`.
 
 #### Getting / Overriding the Azure Route
 
-As of v0.7.0, we added the ability to get the Azure URL.  For example, let's say we wanted to modify the Azure URL so that it also passed the user's email to Azure as a parmater.  Building off [Extended Installation](#extended-installation), in our `AppAzure` class, we could do something like this:
+As of version 0.7.0, there was added the possibility to get the Azure URL. For example, if you need to modify the Azure URL so that it also passed the user's email to Azure as a parmeter.
+
+Building off [Extended Installation](#extended-installation), in our `AzureAuthentication` class, you could do something like this:
 
 ```php
 <?php
@@ -189,9 +211,9 @@ use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
 use Auth;
 
-class AppAzure extends Azure
+class AzureAuthentication extends Azure
 {
-    //we could overload this if we wanted too.
+    //you can overload this if you need too.
     public function getAzureUrl()
     {
         return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
@@ -225,7 +247,7 @@ Additional information regarding this can be found [here](https://docs.microsoft
 
 ## Testing with Laravel Azure Middleware
 
-As of v0.7.0, we added integration with Laravel's tests by calling `actingAs` for HTTP tests or `loginAs` with Dusk.  This assumes that we are using the `Auth::login` method in the success callback, shown at [Extended Installation](#extended-installation).  There is no need to do anything in our `AppAzure` class, unless we needed to overwrite the default behavior, which is shown below:
+As of version 0.7.0, there was added integration with Laravel's tests by calling `actingAs` for HTTP tests or `loginAs` with Dusk.  This assumes that you are using the `Auth::login` method in the success callback, shown at [Extended Installation](#extended-installation).  There is no need to do anything in the `AzureAuthentication` class, unless you needed to overwrite the default behavior, which is shown below:
 
 ```php
 <?php
@@ -236,7 +258,7 @@ use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
 use Auth;
 
-class AppAzure extends Azure
+class AzureAuthentication extends Azure
 {
     //this is the default behavior
     //overwrite to meet your needs
@@ -258,7 +280,7 @@ The above will call the class's redirect method, if it can't find a user in Lara
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel Azure Middleware! To encourage active collaboration, we encourage pull requests, not just issues.
+Thank you for considering contributing to the Laravel Azure Middleware! To encourage active collaboration, the project encourages you to make pull requests, not just issues.
 
 If you file an issue, the issue should contain a title and a clear description of the issue. You should also include as much relevant information as possible and a code sample that demonstrates the issue. The goal of a issue is to make it easy for yourself - and others - to replicate the bug and develop a fix.
 
