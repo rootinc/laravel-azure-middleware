@@ -27,7 +27,7 @@ All these values can be gotten from your tenant through https://portal.azure.com
 9. Add the `azure` middleware to your route groups on any routes that needs to be protected by authentication and enjoy :tada:
 10. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
-__NOTE: As of 0.8.0, the project uses v2 of Azure's login API, which allows it to pass scopes, or permissions that can used.__
+__NOTE: As of version 0.8.0, the project uses v2 of Azure's login API, which allows it to pass scopes, or permissions that can used.__
 
 ## Routing
 
