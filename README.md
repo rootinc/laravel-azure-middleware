@@ -97,7 +97,7 @@ class AzureAuthentication extends Azure
 
 The above gives us a way to add/update users after a successful handshake. `$profile` contains all sorts of metadata that can be used to create or update our user.  More information here: https://docs.microsoft.com/en-us/azure/active-directory/develop/active-directory-protocols-oauth-code#jwt-token-claims . The default implementation redirects to the intended url, or `/`; So in this example, the parent is called.
 
-3. Our routes need to be updated to the following:
+3. The `web.php` routes need to be updated to the following:
 
 ```php
 Route::get('/azure/login', [\App\Http\Middleware\AzureAuthentication::class, 'azure'])->name('azure.login');
@@ -144,7 +144,7 @@ class AzureAuthentication extends Azure
 }
 ```
 
-Building off of our previous example from [Extended Installation](#extended-installation), you now have a user in Laravel Auth (since `Auth::login` was called in the success callback).  With the user model, you can update the user's `updated_at` field.  The callback should call the closure, `$next($request);` and return it.  In this case, the default implementation does this, so in this example, the parent is called.
+Building off of the previous example from [Extended Installation](#extended-installation), you now have a user in Laravel Auth (since `Auth::login` was called in the success callback).  With the user model, you can update the user's `updated_at` field.  The callback should call the closure, `$next($request);` and return it.  In this case, the default implementation does this, so in this example, the parent is called.
 
 #### Custom Redirect
 
@@ -200,7 +200,7 @@ The above code would now set `$login_route` to `/dashboard`.
 
 As of version 0.7.0, there was added the possibility to get the Azure URL. For example, if you need to modify the Azure URL so that it also passed the user's email to Azure as a parmeter.
 
-Building off [Extended Installation](#extended-installation), in our `AzureAuthentication` class, you could do something like this:
+Building off [Extended Installation](#extended-installation), in the `AzureAuthentication` class, you could do something like this:
 
 ```php
 <?php
