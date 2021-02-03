@@ -20,7 +20,7 @@ AZURE_CLIENT_ID=your-app-registration-application-id
 AZURE_CLIENT_SECRET=your-app-registration-client-secret
 AZURE_RESOURCE=https://graph.microsoft.com
 ```
-All these values can be gotten from your tenant through https://portal.azure.com.
+All these values can be obtained from your tenant through https://portal.azure.com.
 6. As of version 0.8.0, the variable `AZURE_SCOPE` was added to the project, which are permissions to be used for the request.  You can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
 7. Additionally, an optional variable, `AZURE_DOMAIN_HINT` was added, so it can be used to help users know which email address they should login with.  More info here: https://azure.microsoft.com/en-us/updates/app-service-auth-and-azure-ad-domain-hints/
 8. In your App Registration on https://portal.azure.com/, set the `Redirect URIs` (often referred to as reply URLs) to the `/azure/callback` route with the full url (example: https://yourwebsite.com/azure/callback or http://localhost:8000 when running development locally).
@@ -52,7 +52,7 @@ Please refer to [Microsoft's branding guidelines](https://docs.microsoft.com/en-
 The [Normal Installation](#normal-installation) implements the login process for users.
 However, if you need to store this user in a database, as well as login the user with Laravel auth, you need some extra configuration. There are two callbacks that are recommended to extend from the Azure class called `success` and `fail`.
 
-This guide will show you how to extent the Root Laravel Azure Middleware Library for you application:
+This guide will show you how to extend the Root Laravel Azure Middleware Library for you application:
 
 1. Follow the [Normal Installation](#normal-installation) guide
 2. Make a new middleware with Artisan command `php artisan make:middleware AzureAuthentication`. This creates the file `AzureAuthentication.php` in the `App\Http\Middleware` folder of your project.
@@ -133,7 +133,7 @@ class AzureAuthentication extends Azure
     {
         $user = Auth::user();
         if($user === null) // If the application looses user data while user is authenticated with Laravel "catch" (i.e: User is deleted)
-            return response()->redirectToRoute('azure.login'); // Make sure the route name is correct if you changed it
+            return $this->redirect($request); // Redirect to login rute as guest
 
         $user->updated_at = Carbon::now();
 
@@ -280,7 +280,7 @@ The above will call the class's redirect method, if it can't find a user in Lara
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel Azure Middleware! To encourage active collaboration, the project encourages you to make pull requests, not just issues.
+Thank you for considering contributing to the Laravel Azure Middleware! To encourage active collaboration, we encourage you to make pull requests, not just issues.
 
 If you file an issue, the issue should contain a title and a clear description of the issue. You should also include as much relevant information as possible and a code sample that demonstrates the issue. The goal of a issue is to make it easy for yourself - and others - to replicate the bug and develop a fix.
 
