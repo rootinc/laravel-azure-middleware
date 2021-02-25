@@ -19,11 +19,15 @@ class AzureServiceProvider extends ServiceProvider
                 __DIR__ . '/../config/azure.php' => config_path('azure.php'),
             ], 'azure-config');
         }
-        else
-        {
-            $this->mergeConfigFrom(
-                __DIR__ . '/../config/azure.php', 'azure'
-            );
-        }
+    }
+
+     /**
+     * {@inheritdoc}
+     */
+    public function register()
+    {
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/azure.php', 'azure'
+        );
     }
 }
