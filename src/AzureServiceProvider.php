@@ -17,7 +17,7 @@ class AzureServiceProvider extends ServiceProvider
         {
             $this->publishes([
                 __DIR__ . '/../config/azure.php' => config_path('azure.php'),
-            ], 'azure-config');
+            ], 'config');
         }
     }
 
