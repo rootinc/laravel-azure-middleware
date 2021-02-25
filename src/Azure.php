@@ -186,11 +186,23 @@ class Azure
      */
     protected function fail(Request $request, \Exception $e)
     {
-        // Added by smitthhyy 18Dec2019 - Return 403 if user authenticates in AD but is not assigned to this application
-        if ($request->isMethod('get')) {
+        // JustinByrne updated the original code from smitthhyy (18 Dec 2019) to change to an array to allow for multiple error codes.
+        if ($request->isMethod('get'))  {
             $errorDescription = trim(substr($request->query('error_description', 'SOMETHING_ELSE'), 0, 11));
-            if($errorDescription == "AADSTS50105") {
-                abort(403, "User is not authorisied within Azure AD to access this application.");
+            
+            $azureErrors = [
+                'AADSTS50105' => [
+                    'HTTP_CODE' => '403',
+                    'msg' => 'User is not authorized within Azure AD to access this application.',
+                ],
+                'AADSTS90072' => [
+                    'HTTP_CODE' => '403',
+                    'msg' => 'The logged on User is not in the allowed Tenant. Log in with a User in the allowed Tenant.',
+                ],
+            ];
+
+            if (array_key_exists($errorDescription, $azureErrors)) {
+                return abort($azureErrors[$errorDescription]['HTTP_CODE'], $azureErrors[$errorDescription]['msg']);
             }
         }
         
