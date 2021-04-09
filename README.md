@@ -46,6 +46,8 @@ The out-of-the-box implementation let's you login users.  However, let's say we 
 
 namespace App\Http\Middleware;
 
+use Illuminate\Http\Request;
+
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
@@ -56,7 +58,7 @@ use App\User;
 
 class AppAzure extends Azure
 {
-    protected function success($request, $access_token, $refresh_token, $profile)
+    protected function success(Request $request, $access_token, $refresh_token, $profile)
     {
         $graph = new Graph();
         $graph->setAccessToken($access_token);
@@ -102,6 +104,8 @@ As of v0.4.0, we added a callback after every successful request (handshake) fro
 
 namespace App\Http\Middleware;
 
+use Illuminate\Http\Request;
+
 use Closure;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
@@ -113,7 +117,7 @@ use App\User;
 
 class AppAzure extends Azure
 {
-    protected function handlecallback($request, Closure $next, $access_token, $refresh_token)
+    protected function handlecallback(Request $request, Closure $next, $access_token, $refresh_token)
     {
         $user = Auth::user();
 
@@ -137,13 +141,15 @@ As of v0.6.0, we added the ability to customize the redirect method.  For exampl
 
 namespace App\Http\Middleware;
 
+use Illuminate\Http\Request;
+
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
 use Auth;
 
 class AppAzure extends Azure
 {
-    protected function redirect($request)
+    protected function redirect(Request $request)
     {
         if (Auth::user() !== null)
         {
@@ -184,6 +190,8 @@ As of v0.7.0, we added the ability to get the Azure URL.  For example, let's say
 <?php
 
 namespace App\Http\Middleware;
+
+use Illuminate\Http\Request;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
@@ -231,6 +239,8 @@ As of v0.7.0, we added integration with Laravel's tests by calling `actingAs` fo
 <?php
 
 namespace App\Http\Middleware;
+
+use Illuminate\Http\Request;
 
 use RootInc\LaravelAzureMiddleware\Azure as Azure;
 
