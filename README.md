@@ -13,7 +13,7 @@ Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure')
 Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback')
     ->name('azure.callback');
 ```
-
+> NOTE: Only need the route names if configuring `redirect_uri` in the portal.
 4. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
 5. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/ (Hint: AZURE_RESOURCE should be https://graph.microsoft.com)
 6. As of 0.8.0, we added `AZURE_SCOPE`, which are permissions to be used for the request.  We can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
@@ -22,7 +22,7 @@ Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurec
 9. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
 10. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
-__NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Graph~~ As of 0.8.0, we are using v2 of Azure's login API, which allows us to pass scopes, or permissions we'd like to use.__
+>NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Graph~~ As of 0.8.0, we are using v2 of Azure's login API, which allows us to pass scopes, or permissions we'd like to use.
 
 ## Routing
 
@@ -31,6 +31,8 @@ __NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Gr
 `Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback')->name('azure.callback');` First parameter can be whatever you want to route after your callback.  Change as you would like.
 
 `Route::get('/logout/azure', '\RootInc\LaravelAzureMiddleware\Azure@azurelogout')->name('azure.logout);` First parameter can be whatever you want to route after your callback.  Change as you would like.
+
+> NOTE: Only need the route names if configuring `redirect_uri` in the portal.
 
 ### Front End
 
@@ -207,7 +209,9 @@ class AppAzure extends Azure
     //we could overload this if we wanted too.
     public function getAzureUrl()
     {
-        return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope')) . '&redirect_uri=' . urlencode(route('azure.callback'));
+        $url = $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
+
+        return Route::has('azure.callback') ? $url . '&redirect_uri=' . urlencode(route('azure.callback')) : $url;
     }
 
     public function azure(Request $request)
