@@ -10,6 +10,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 use Auth;
+use Route;
 
 class Azure
 {
@@ -46,15 +47,20 @@ class Azure
         $client = new Client();
 
         try {
+            $form_params = [
+                'grant_type' => 'refresh_token',
+                'client_id' => config('azure.client.id'),
+                'client_secret' => config('azure.client.secret'),
+                'refresh_token' => $refresh_token,
+                'resource' => config('azure.resource'),
+            ];
+
+            if (Route::has('azure.callback')) {
+                $form_params['redirect_uri'] = route('azure.callback');
+            }
+
             $response = $client->request('POST', $this->baseUrl . config('azure.tenant_id') . $this->route . "token", [
-                'form_params' => [
-                    'grant_type' => 'refresh_token',
-                    'client_id' => config('azure.client.id'),
-                    'client_secret' => config('azure.client.secret'),
-                    'refresh_token' => $refresh_token,
-                    'resource' => config('azure.resource'),
-                    'redirect_uri' => route('azure.callback'),
-                ]
+                'form_params' => $form_params,
             ]);
 
             $contents = json_decode($response->getBody()->getContents());
@@ -99,7 +105,9 @@ class Azure
      */
     public function getAzureUrl()
     {
-        return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'))  . '&redirect_uri=' . urlencode(route('azure.callback'));
+        $url = $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
+
+        return Route::has('azure.callback') ? $url . '&redirect_uri=' . urlencode(route('azure.callback')) : $url;
     }
 
     /**
