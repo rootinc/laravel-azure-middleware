@@ -54,7 +54,7 @@ use Microsoft\Graph\Model;
 
 use Auth;
 
-use App\User;
+use App\Models\User;
 
 class AppAzure extends Azure
 {
@@ -70,8 +70,7 @@ class AppAzure extends Azure
         $email = strtolower($graph_user->getUserPrincipalName());
 
         $user = User::updateOrCreate(['email' => $email], [
-            'firstName' => $graph_user->getGivenName(),
-            'lastName' => $graph_user->getSurname(),
+            'name' => $graph_user->getGivenName() . ' ' . $graph_user->getSurname(),
         ]);
 
         Auth::login($user, true);
