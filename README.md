@@ -8,10 +8,12 @@ Provides Azure Authentication Middleware for a Laravel App.  If you like this, c
 2. run `php artisan vendor:publish --provider="RootInc\LaravelAzureMiddleware\AzureServiceProvider"` to install config file to `config/azure.php`
 3. In our routes folder (most likely `web.php`), add
 ```php
-Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');
-Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback');
+Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure')
+    ->name('azure.login');
+Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback')
+    ->name('azure.callback');
 ```
-
+> NOTE: Only need the route names if configuring `redirect_uri` in the portal.
 4. In our `App\Http\Kernel.php` add `'azure' => \RootInc\LaravelAzureMiddleware\Azure::class,` most likely to the `$routeMiddleware` array.
 5. In our `.env` add `AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET and AZURE_RESOURCE`.  We can get these values/read more here: https://portal.azure.com/ (Hint: AZURE_RESOURCE should be https://graph.microsoft.com)
 6. As of 0.8.0, we added `AZURE_SCOPE`, which are permissions to be used for the request.  We can read more about these here: https://docs.microsoft.com/en-us/graph/api/resources/users?view=graph-rest-1.0
@@ -20,19 +22,21 @@ Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurec
 9. Add the `azure` middleware to your route groups on any routes that needs protected by auth and enjoy :tada:
 10. If you need custom callbacks, see [Extended Installation](#extended-installation).
 
-__NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Graph~~ As of 0.8.0, we are using v2 of Azure's login API, which allows us to pass scopes, or permissions we'd like to use.__
+>NOTE: ~~You may need to add premissions for (legacy) Azure Active Directory Graph~~ As of 0.8.0, we are using v2 of Azure's login API, which allows us to pass scopes, or permissions we'd like to use.
 
 ## Routing
 
-`Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure');` First parameter can be wherever you want to route the azure login.  Change as you would like.
+`Route::get('/login/azure', '\RootInc\LaravelAzureMiddleware\Azure@azure')->name('azure.login');` First parameter can be wherever you want to route the azure login.  Change as you would like.
 
-`Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback');` First parameter can be whatever you want to route after your callback.  Change as you would like.
+`Route::get('/login/azurecallback', '\RootInc\LaravelAzureMiddleware\Azure@azurecallback')->name('azure.callback');` First parameter can be whatever you want to route after your callback.  Change as you would like.
 
-`Route::get('/logout/azure', '\RootInc\LaravelAzureMiddleware\Azure@azurelogout');` First parameter can be whatever you want to route after your callback.  Change as you would like.
+`Route::get('/logout/azure', '\RootInc\LaravelAzureMiddleware\Azure@azurelogout')->name('azure.logout);` First parameter can be whatever you want to route after your callback.  Change as you would like.
+
+> NOTE: Only need the route names if configuring `redirect_uri` in the portal.
 
 ### Front End
 
-It's best to have an Office 365 button on your login webpage that routes to `/login/azure` (or whatever you renamed it to).  This can be as simple as an anchor tag like this `<a href="/login/azure" class="officeButton"></a>` 
+It's best to have an Office 365 button on your login webpage that routes to `route('azure.login')`.  This can be as simple as an anchor tag like this `<a href="{{ route('azure.login') }}" class="officeButton"></a>`
 
 ## Extended Installation
 
@@ -62,11 +66,11 @@ class AppAzure extends Azure
     {
         $graph = new Graph();
         $graph->setAccessToken($access_token);
-        
+
         $graph_user = $graph->createRequest("GET", "/me")
                       ->setReturnType(Model\User::class)
                       ->execute();
-        
+
         $email = strtolower($graph_user->getUserPrincipalName());
 
         $user = User::updateOrCreate(['email' => $email], [
@@ -86,9 +90,12 @@ The above gives us a way to add/update users after a successful handshake.  `$p
 3. Our routes need to be updated to the following:
 
 ```php
-Route::get('/login/azure', '\App\Http\Middleware\AppAzure@azure');
-Route::get('/login/azurecallback', '\App\Http\Middleware\AppAzure@azurecallback');
-Route::get('/logout/azure', '\App\Http\Middleware\AppAzure@azurelogout');
+Route::get('/login/azure', '\App\Http\Middleware\AppAzure@azure')
+    ->name('azure.login');
+Route::get('/login/azurecallback', '\App\Http\Middleware\AppAzure@azurecallback')
+    ->name('azure.callback');
+Route::get('/logout/azure', '\App\Http\Middleware\AppAzure@azurelogout')
+    ->name('azure.logout');
 ```
 
 4. Finally, update `Kernel.php`'s `azure` key to be `'azure' => \App\Http\Middleware\AppAzure::class,`
@@ -202,7 +209,9 @@ class AppAzure extends Azure
     //we could overload this if we wanted too.
     public function getAzureUrl()
     {
-        return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
+        $url = $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
+
+        return Route::has('azure.callback') ? $url . '&redirect_uri=' . urlencode(route('azure.callback')) : $url;
     }
 
     public function azure(Request $request)

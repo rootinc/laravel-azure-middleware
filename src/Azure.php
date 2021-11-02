@@ -10,6 +10,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 
 use Auth;
+use Route;
 
 class Azure
 {
@@ -46,14 +47,20 @@ class Azure
         $client = new Client();
 
         try {
+            $form_params = [
+                'grant_type' => 'refresh_token',
+                'client_id' => config('azure.client.id'),
+                'client_secret' => config('azure.client.secret'),
+                'refresh_token' => $refresh_token,
+                'resource' => config('azure.resource'),
+            ];
+
+            if (Route::has('azure.callback')) {
+                $form_params['redirect_uri'] = route('azure.callback');
+            }
+
             $response = $client->request('POST', $this->baseUrl . config('azure.tenant_id') . $this->route . "token", [
-                'form_params' => [
-                    'grant_type' => 'refresh_token',
-                    'client_id' => config('azure.client.id'),
-                    'client_secret' => config('azure.client.secret'),
-                    'refresh_token' => $refresh_token,
-                    'resource' => config('azure.resource'),
-                ]
+                'form_params' => $form_params,
             ]);
 
             $contents = json_decode($response->getBody()->getContents());
@@ -64,7 +71,7 @@ class Azure
         if (empty($contents->access_token) || empty($contents->refresh_token)) {
             $this->fail($request, new \Exception('Missing tokens in response contents'));
         }
-        
+
         $request->session()->put('_rootinc_azure_access_token', $contents->access_token);
         $request->session()->put('_rootinc_azure_refresh_token', $contents->refresh_token);
 
@@ -98,7 +105,9 @@ class Azure
      */
     public function getAzureUrl()
     {
-        return $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
+        $url = $this->baseUrl . config('azure.tenant_id') . $this->route2 . "authorize?response_type=code&client_id=" . config('azure.client.id') . "&domain_hint=" . urlencode(config('azure.domain_hint')) . "&scope=" . urldecode(config('azure.scope'));
+
+        return Route::has('azure.callback') ? $url . '&redirect_uri=' . urlencode(route('azure.callback')) : $url;
     }
 
     /**
@@ -189,7 +198,7 @@ class Azure
         // JustinByrne updated the original code from smitthhyy (18 Dec 2019) to change to an array to allow for multiple error codes.
         if ($request->isMethod('get'))  {
             $errorDescription = trim(substr($request->query('error_description', 'SOMETHING_ELSE'), 0, 11));
-            
+
             $azureErrors = [
                 'AADSTS50105' => [
                     'HTTP_CODE' => '403',
@@ -205,7 +214,7 @@ class Azure
                 return abort($azureErrors[$errorDescription]['HTTP_CODE'], $azureErrors[$errorDescription]['msg']);
             }
         }
-        
+
         return implode("", explode(PHP_EOL, $e->getMessage()));
     }
 
