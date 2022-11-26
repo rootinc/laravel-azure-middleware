@@ -154,6 +154,7 @@ class Azure
                     'client_secret' => config('azure.client.secret'),
                     'code' => $code,
                     'resource' => config('azure.resource'),
+                    'redirect_uri' => route('azure.callback'),
                 ]
             ]);
 
